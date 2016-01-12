@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>RBAChat</title>
+
+    <link rel="stylesheet" type="text/css" href="mystyle.css"/>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <style>
+      #chat{
+        height:500px;
+      }
+      #contentWrap{
+        display: none;
+      }
+      #chatWrap{
+        border: 1px #ccc solid;
+      }
+      #nickError{
+        color: red;
+      }
+      #maincontent{
+          margin-top : 20px;
+          font-family: Segoi-UI;
+      }
+      #users{
+        border: 1px #ccc solid;
+      }
+      .error{
+        color: red;
+      }
+      .whisper{
+        color: green;
+
+      }
+    </style>
+
+  </head>
+  <body>
+    <div id="maincontent" class="container">
+      <div class="col-sm-7">
+      <h3> Chat Room</h3>
+    <div id="nickWrap" class="col-sm-12">
+      <p
+        Enter UserName:
+        <p id="nickError" ></p>
+        <form id="setNick" class="form-inline">
+           <input id="nickname" class="form-control" size="35"/>
+           <input type="submit" value="submit" class="btn btn-default">
+        </form>
+      </p>
+    </div>
+    <div id="contentWrap" class="col-sm-12">
+        <div id="chatWrap" class="col-sm-9">
+           <div id="chat"></div>
+          <form id="send-message" class="form-inline">
+
+            <input id="message" class="form-control" size="35"/>
+
+            <input type="submit" value="send" class="btn btn-default"/>
+
+              <br/><br/>
+          </form>
+        </div>
+
+        <div id="users" class="col-sm-3">
+          <h5>Available Users:</h5>
+        </div>
+   </div>
+ </div>
+</div>
+
+    <!---Script files  -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script src ="http://code.jquery.com/jquery-latest.min.js"></script>
+    <script src ="/socket.io/socket.io.js"></script>
+
+    <script>
+      jQuery(function($){
+        var socket = io.connect();    // to get this particular socket from socket.io.js
+        var $nickForm = $('#setNick');
+        var $nickError = $('#nickError');
+        var $nickBox = $('#nickname');
+        var $messageForm = $('#send-message');    // taking track of the variables in hand before to make chat app works faster
+        var $messageBox = $('#message');
+        var $chat = $('#chat');
+        var $users = $('#users');
+        $nickForm.submit(function(e){
+          e.preventDefault();   // to prevent default submit operation to server
+          socket.emit('new user', $nickBox.val(), function(data){
+            if(data){
+              $('#nickWrap').hide();
+              $('#contentWrap').show();
+            }
+            else{
+              $('#nickError').html("UserName already exists");
+            }
+          });  // emit your chat to server using emit method in socket
+          $nickBox.val('');
+        });
+
+        socket.on('usernames', function(data,  name){
+          var html = '';
+          for(i = 0; i < data.length;i++){
+              if(data[i] != name){
+                html += data[i] + "<br/>";
+              }
+          }
+          $users.html(html);
+        });
+
+
+        $messageForm.submit(function(e){
+          e.preventDefault();   // to prevent default submit operation to server
+          socket.emit('send message', $messageBox.val(),function(data){
+            $chat.append("<span class='error'>"+data+"</span><br/>");
+          });  // emit your chat to server using emit method in socket
+          $messageBox.val('');  // clear the textbox
+        });
+
+        socket.on('load old msgs', function(docs){
+           for(var i = 0; i < docs.length; i++){
+              displayMsg(docs[i]);
+           }
+        });
+
+        function displayMsg(data){
+          $chat.append("<span class='msg'><b>"+data.nick+":</b> "+ data.msg+"</span><br/>");
+        }
+
+        socket.on('new message', function(data){
+          displayMsg(data);
+        });
+
+        socket.on('whisper', function(data){
+          $chat.append("<span class='whisper'><b>"+data.nick+":</b> "+ data.msg+"</span><br/>");
+        });
+      });
+    </script>
+  </body>
+</html>
