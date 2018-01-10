@@ -1,2 +1,2 @@
 # Chat
-Simple NodeJA chat application
+Simple NodeJS chat application
